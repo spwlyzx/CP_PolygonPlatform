@@ -27,6 +27,7 @@ public:
 // ²Ù×÷
 public:
 	void mb_statusSetText(char* s1, char* s2);
+	void initBooleanData();
 
 // ÖØÐ´
 public:
@@ -57,11 +58,8 @@ public:
 	afx_msg void OnComboAorb();
 	afx_msg void OnUpdateComboAorb(CCmdUI *pCmdUI);
 	afx_msg void OnEdgeNumber();
-	afx_msg void OnUpdateEdgeNumber(CCmdUI *pCmdUI);
-	afx_msg void OnUpdateNewRightOutloop(CCmdUI *pCmdUI);
 	afx_msg void OnNewRightOutloop();
 	afx_msg void OnNewRightInloop();
-	afx_msg void OnUpdateNewRightInloop(CCmdUI *pCmdUI);
 	afx_msg void OnSelectPoint();
 	afx_msg void OnUpdateSelectPoint(CCmdUI *pCmdUI);
 	afx_msg void OnSelectLoop();
@@ -70,52 +68,28 @@ public:
 	afx_msg void OnUpdateSelectRegion(CCmdUI *pCmdUI);
 	afx_msg void OnSelectPolygon();
 	afx_msg void OnUpdateSelectPolygon(CCmdUI *pCmdUI);
-	afx_msg void OnSelectTriangle();
-	afx_msg void OnUpdateSelectTriangle(CCmdUI *pCmdUI);
 	afx_msg void OnSelectOnly();
 	afx_msg void OnUpdateSelectOnly(CCmdUI *pCmdUI);
 	afx_msg void OnAddOutloop();
-	afx_msg void OnUpdateAddOutloop(CCmdUI *pCmdUI);
 	afx_msg void OnAddInloop();
-	afx_msg void OnUpdateAddInloop(CCmdUI *pCmdUI);
 	afx_msg void OnAddPoint();
-	afx_msg void OnUpdateAddPoint(CCmdUI *pCmdUI);
 	afx_msg void OnDelete();
-	afx_msg void OnUpdateDelete(CCmdUI *pCmdUI);
 	afx_msg void OnMoveSame();
 	afx_msg void OnUpdateMoveSame(CCmdUI *pCmdUI);
 	afx_msg void OnCheck();
-	afx_msg void OnUpdateCheck(CCmdUI *pCmdUI);
 	afx_msg void OnPolygonUnion();
-	afx_msg void OnUpdatePolygonUnion(CCmdUI *pCmdUI);
 	afx_msg void OnPolygonIntersection();
-	afx_msg void OnUpdatePolygonIntersection(CCmdUI *pCmdUI);
 	afx_msg void OnPolygonAB();
-	afx_msg void OnUpdatePolygonAB(CCmdUI *pCmdUI);
 	afx_msg void OnPolygonBA();
-	afx_msg void OnUpdatePolygonBA(CCmdUI *pCmdUI);
-	afx_msg void OnPolygonTriangulation();
-	afx_msg void OnUpdatePolygonTriangulation(CCmdUI *pCmdUI);
 	afx_msg void OnTolerance();
-	afx_msg void OnUpdateTolerance(CCmdUI *pCmdUI);
 	afx_msg void OnViewA();
 	afx_msg void OnUpdateViewA(CCmdUI *pCmdUI);
 	afx_msg void OnViewB();
 	afx_msg void OnUpdateViewB(CCmdUI *pCmdUI);
 	afx_msg void OnViewResult();
 	afx_msg void OnUpdateViewResult(CCmdUI *pCmdUI);
-	afx_msg void OnViewTFace();
-	afx_msg void OnUpdateViewTFace(CCmdUI *pCmdUI);
-	afx_msg void OnViewTEdge();
-	afx_msg void OnUpdateViewTEdge(CCmdUI *pCmdUI);
-	afx_msg void OnViewTFaceEdge();
-	afx_msg void OnUpdateViewTFaceEdge(CCmdUI *pCmdUI);
 	afx_msg void OnViewFit();
-	afx_msg void OnUpdateViewFit(CCmdUI *pCmdUI);
 	afx_msg void OnViewStandard();
-	afx_msg void OnUpdateViewStandard(CCmdUI *pCmdUI);
-	afx_msg void OnViewStatusBar();
-	afx_msg void OnUpdateViewStatusBar(CCmdUI *pCmdUI);
 	afx_msg void OnViewPointId();
 	afx_msg void OnUpdateViewPointId(CCmdUI *pCmdUI);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);

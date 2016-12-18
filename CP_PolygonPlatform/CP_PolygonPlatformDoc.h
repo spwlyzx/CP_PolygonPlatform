@@ -14,6 +14,7 @@
 
 #pragma once
 #include "CP_Triangle.h"
+#include "Ex_Polygon.h"
 
 class CCP_PolygonPlatformDoc : public CDocument
 {
@@ -57,6 +58,10 @@ public:
 	// 下面是一些临时性变量
 	CP_Point m_basePoint;
 	bool m_flagMouseDown; // true: 按下鼠标左键; false: 放开鼠标左键
+
+	//用于布尔运算计算的中间数据类型
+	ExPolygon ex_A;
+	ExPolygon ex_B;
 
 // 操作
 public:

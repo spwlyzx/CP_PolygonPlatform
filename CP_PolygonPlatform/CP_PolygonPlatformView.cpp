@@ -1686,44 +1686,84 @@ void CCP_PolygonPlatformView::OnMouseMove(UINT nFlags, CPoint point)
 
 void CCP_PolygonPlatformView::OnCheck()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 ///////////////////////////布尔运算相关功能/////////////////////////////////
 
+void CCP_PolygonPlatformView::initBooleanData()
+{
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
+	pDoc->ex_A.clearAll();
+	pDoc->ex_B.clearAll();
+	pDoc->ex_A.setPolygon(pDoc->m_a);
+	pDoc->ex_B.setPolygon(pDoc->m_b);
+}
+
 void CCP_PolygonPlatformView::OnPolygonUnion()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 void CCP_PolygonPlatformView::OnPolygonIntersection()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 void CCP_PolygonPlatformView::OnPolygonAB()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 void CCP_PolygonPlatformView::OnPolygonBA()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 void CCP_PolygonPlatformView::OnViewResult()
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 void CCP_PolygonPlatformView::OnUpdateViewResult(CCmdUI *pCmdUI)
 {
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
 	// TODO: 在此添加命令更新用户界面处理程序代码
 }
 

@@ -190,6 +190,7 @@
     <ClInclude Include="CP_PolygonPlatformDoc.h" />
     <ClInclude Include="CP_PolygonPlatformView.h" />
     <ClInclude Include="CP_Triangle.h" />
+    <ClInclude Include="Ex_Polygon.h" />
     <ClInclude Include="MainFrm.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -201,6 +202,7 @@
     <ClCompile Include="CP_PolygonPlatformDoc.cpp" />
     <ClCompile Include="CP_PolygonPlatformView.cpp" />
     <ClCompile Include="CP_Triangle.cpp" />
+    <ClCompile Include="Ex_Polygon.cpp" />
     <ClCompile Include="MainFrm.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
