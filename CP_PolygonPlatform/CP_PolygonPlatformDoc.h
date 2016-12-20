@@ -63,6 +63,11 @@ public:
 	ExPolygon ex_A;
 	ExPolygon ex_B;
 
+	//用于储存布尔运算结果
+	ExPolygon ex_result;
+	bool showBooleanResult;// true: 显示布尔运算结果; false: 不显示布尔运算结果
+	DescriptorArray descriptors;
+
 // 操作
 public:
 	void mb_initData();

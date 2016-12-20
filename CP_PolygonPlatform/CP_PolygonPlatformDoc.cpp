@@ -53,6 +53,8 @@ void CCP_PolygonPlatformDoc::mb_initData()
 {
 	m_a.mb_clear();
 	m_b.mb_clear();
+	ex_A.clearAll();
+	ex_B.clearAll();
 	m_tolerance = 1e-6; // 位置容差
 	m_scale = 1.0; // 缩放比例
 	m_translation.m_x = 0.0; // 坐标平移量
@@ -76,6 +78,7 @@ void CCP_PolygonPlatformDoc::mb_initData()
 	m_flagSelectIDSetInB.clear();
 	m_triagleMesh.mb_clear();
 	m_flagShowTriangleFace = false;  // true: 显示; false: 不显示。
+	showBooleanResult = true;
 } // 类CCP_PolygonPlatformDoc的成员函数mb_initData结束
 
 BOOL CCP_PolygonPlatformDoc::OnNewDocument()

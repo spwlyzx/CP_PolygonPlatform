@@ -27,7 +27,8 @@ public:
 // ²Ù×÷
 public:
 	void mb_statusSetText(char* s1, char* s2);
-	void initBooleanData();
+	void booleanOperation(int type);
+	void initExPolygon();
 
 // ÖØÐ´
 public:

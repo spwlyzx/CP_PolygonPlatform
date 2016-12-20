@@ -474,6 +474,21 @@ void CCP_PolygonPlatformView::OnDraw(CDC* pDC)
 			0, 0, 0,
 			6);
 	} // if (pDoc->m_flagAdd == 2)结束
+	if (pDoc->showBooleanResult) {
+		gb_drawPolygonLoop(pDC, pDoc->m_result,
+			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
+			90, 90, 90,
+			180, 180, 180,
+			3);
+		gb_drawPolygonPoint(pDC, pDoc->m_result,
+			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
+			0, 0, 0,
+			3);
+		if (pDoc->m_flagShowPointID)
+			gb_drawPolygonPointID(pDC, pDoc->m_result,
+				pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
+				0, 0, 0);
+	}
 }
 
 void gb_drawLoop(CDC* pDC, CP_Loop& p,
@@ -660,7 +675,7 @@ void CCP_PolygonPlatformView::OnEdgeNumber()
 	if (!pDoc)
 		return;
 	CString string;
-	CMFCRibbonBar* robbon_bar = ((CFrameWndEx*)AfxGetMainWnd())->GetRibbonBar(); //获取Ribbon bar 句柄
+	CMFCRibbonBar* robbon_bar = ((CFrameWndEx*)AfxGetMainWnd()->GetTopLevelFrame())->GetRibbonBar(); //获取Ribbon bar 句柄
 	if (robbon_bar == NULL)
 		return;
 	CMFCRibbonEdit* slider = (CMFCRibbonEdit*)robbon_bar->FindByID(ID_EDGE_NUMBER); // 获取编辑框句柄
@@ -1690,22 +1705,40 @@ void CCP_PolygonPlatformView::OnCheck()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	initExPolygon();
+	pDoc->ex_A.getCP_Polygon(pDoc->m_a);
+	pDoc->ex_B.getCP_Polygon(pDoc->m_b);
+	Invalidate();
 	// TODO: 在此添加命令处理程序代码
 }
 
 
 ///////////////////////////布尔运算相关功能/////////////////////////////////
 
-void CCP_PolygonPlatformView::initBooleanData()
+void CCP_PolygonPlatformView::initExPolygon()
 {
 	CCP_PolygonPlatformDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
-	pDoc->ex_A.clearAll();
-	pDoc->ex_B.clearAll();
-	pDoc->ex_A.setPolygon(pDoc->m_a);
-	pDoc->ex_B.setPolygon(pDoc->m_b);
+	pDoc->ex_A.setPolygon(pDoc->m_a, &pDoc->descriptors);
+	pDoc->ex_B.setPolygon(pDoc->m_b, &pDoc->descriptors);
+}
+
+//type为布尔运算类型
+//0:union
+//1:intersect
+//2:A-B
+//3:B-A
+void CCP_PolygonPlatformView::booleanOperation(int type)
+{
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
+	makeIntersections(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance, pDoc->descriptors);
+	labeling(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance);
+	labeling(pDoc->ex_B, pDoc->ex_A, pDoc->m_tolerance);
 }
 
 void CCP_PolygonPlatformView::OnPolygonUnion()
@@ -1714,6 +1747,7 @@ void CCP_PolygonPlatformView::OnPolygonUnion()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	booleanOperation(0);
 	// TODO: 在此添加命令处理程序代码
 }
 
@@ -1724,6 +1758,7 @@ void CCP_PolygonPlatformView::OnPolygonIntersection()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	booleanOperation(1);
 	// TODO: 在此添加命令处理程序代码
 }
 
@@ -1734,6 +1769,7 @@ void CCP_PolygonPlatformView::OnPolygonAB()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	booleanOperation(2);
 	// TODO: 在此添加命令处理程序代码
 }
 
@@ -1744,6 +1780,7 @@ void CCP_PolygonPlatformView::OnPolygonBA()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	booleanOperation(3);
 	// TODO: 在此添加命令处理程序代码
 }
 
@@ -1754,7 +1791,8 @@ void CCP_PolygonPlatformView::OnViewResult()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
-	// TODO: 在此添加命令处理程序代码
+	pDoc->showBooleanResult ^= true;
+	Invalidate(); // 刷新
 }
 
 
@@ -1764,7 +1802,7 @@ void CCP_PolygonPlatformView::OnUpdateViewResult(CCmdUI *pCmdUI)
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
-	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->SetCheck(pDoc->showBooleanResult);
 }
 
 
