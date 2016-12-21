@@ -477,8 +477,8 @@ void CCP_PolygonPlatformView::OnDraw(CDC* pDC)
 	if (pDoc->showBooleanResult) {
 		gb_drawPolygonLoop(pDC, pDoc->m_result,
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
-			90, 90, 90,
-			180, 180, 180,
+			0, 0, 0,
+			0, 0, 0,
 			3);
 		gb_drawPolygonPoint(pDC, pDoc->m_result,
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
@@ -1705,15 +1705,36 @@ void CCP_PolygonPlatformView::OnCheck()
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+
 	initExPolygon();
-	pDoc->ex_A.getCP_Polygon(pDoc->m_a);
-	pDoc->ex_B.getCP_Polygon(pDoc->m_b);
-	Invalidate();
-	// TODO: 在此添加命令处理程序代码
+	bool isA = isLegal(pDoc->ex_A, pDoc->m_tolerance);
+	bool isB = isLegal(pDoc->ex_B, pDoc->m_tolerance);
+	if (!isA && !isB) {
+		MessageBox("多边形A和B都不合法！");
+	}
+	else if (!isA) {
+		MessageBox("多边形A不合法！");
+	}
+	else if (!isB) {
+		MessageBox("多边形B不合法！");
+	}
+	else {
+		MessageBox("合法。");
+	}
 }
 
-
 ///////////////////////////布尔运算相关功能/////////////////////////////////
+
+void CCP_PolygonPlatformView::displayResult()
+{
+	CCP_PolygonPlatformDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+		return;
+	pDoc->ex_result_true.getCP_Polygon(pDoc->m_result);
+	Invalidate();
+}
+
 
 void CCP_PolygonPlatformView::initExPolygon()
 {
@@ -1723,6 +1744,8 @@ void CCP_PolygonPlatformView::initExPolygon()
 		return;
 	pDoc->ex_A.setPolygon(pDoc->m_a, &pDoc->descriptors);
 	pDoc->ex_B.setPolygon(pDoc->m_b, &pDoc->descriptors);
+	pDoc->ex_result.clearAll();
+	pDoc->ex_result_true.clearAll();
 }
 
 //type为布尔运算类型
@@ -1736,10 +1759,42 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
+	initExPolygon();
+	bool isA = isLegal(pDoc->ex_A, pDoc->m_tolerance);
+	bool isB = isLegal(pDoc->ex_B, pDoc->m_tolerance);
+	if(!isA && !isB){
+		MessageBox("多边形A和B都不合法！");
+		return;
+	}
+	else if (!isA) {
+		MessageBox("多边形A不合法！");
+		return;
+	}
+	else if (!isB) {
+		MessageBox("多边形B不合法！");
+		return;
+	}
 	makeIntersections(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance, pDoc->descriptors);
 	labeling(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance);
 	labeling(pDoc->ex_B, pDoc->ex_A, pDoc->m_tolerance);
+	switch (type) {
+	case 0:
+		collectContour(pDoc->ex_A, pDoc->ex_B, pDoc->ex_result, pDoc->m_tolerance, OperationFlag::UNION);
+		break;
+	case 1:
+		collectContour(pDoc->ex_A, pDoc->ex_B, pDoc->ex_result, pDoc->m_tolerance, OperationFlag::INTERSECTION);
+		break;
+	case 2:
+		collectContour(pDoc->ex_A, pDoc->ex_B, pDoc->ex_result, pDoc->m_tolerance, OperationFlag::DIFFERENCE_AB);
+		break;
+	case 3:
+		collectContour(pDoc->ex_B, pDoc->ex_A, pDoc->ex_result, pDoc->m_tolerance, OperationFlag::DIFFERENCE_AB);
+		break;
+	}
+	combineContours(pDoc->ex_result, pDoc->ex_result_true);
+	displayResult();
 }
+
 
 void CCP_PolygonPlatformView::OnPolygonUnion()
 {
@@ -1748,7 +1803,6 @@ void CCP_PolygonPlatformView::OnPolygonUnion()
 	if (!pDoc)
 		return;
 	booleanOperation(0);
-	// TODO: 在此添加命令处理程序代码
 }
 
 
@@ -1759,8 +1813,8 @@ void CCP_PolygonPlatformView::OnPolygonIntersection()
 	if (!pDoc)
 		return;
 	booleanOperation(1);
-	// TODO: 在此添加命令处理程序代码
 }
+
 
 
 void CCP_PolygonPlatformView::OnPolygonAB()
@@ -1770,7 +1824,6 @@ void CCP_PolygonPlatformView::OnPolygonAB()
 	if (!pDoc)
 		return;
 	booleanOperation(2);
-	// TODO: 在此添加命令处理程序代码
 }
 
 
@@ -1781,7 +1834,6 @@ void CCP_PolygonPlatformView::OnPolygonBA()
 	if (!pDoc)
 		return;
 	booleanOperation(3);
-	// TODO: 在此添加命令处理程序代码
 }
 
 

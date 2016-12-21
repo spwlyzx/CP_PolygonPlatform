@@ -8,6 +8,8 @@ enum EdgeLabel { E_INSIDE, E_OUTSIDE, E_SHARED1, E_SHARED2, E_NOLABEL };
 enum ContourLabel { C_INSIDE, C_OUTSIDE, C_ISECTED, C_NOLABEL };
 enum ContourPos { CP_INCONTOUR, CP_OUTCONTOUR, CP_NOLABEL };
 enum DirFlag { D_PREVIOUS, D_NEXT, D_NOLABEL};
+enum OperationFlag { UNION, INTERSECTION, DIFFERENCE_AB };
+enum DirectionFlag { FORWARD, BACKWARD };
 
 class Vertex;
 class Edge;
@@ -33,6 +35,8 @@ public:
 
 public:
 	Vertex(ExPolygon* polygon);
+	Vertex(ExPolygon* polygon,Vertex& pos);
+	Vertex(ExPolygon* polygon, Vertex* pos);
 	Vertex(double ix, double iy,ExPolygon* poly);
 	Vertex(CP_Point& point,ExPolygon* poly);
 	void getPoint(CP_Point& result);
@@ -71,8 +75,8 @@ public:
 	Edge(int one, int two, ExPolygon* poly);
 	Edge();
 	Edge(ExPolygon* poly);
-	//Edge getReverse();
 	double getAngle(bool isA, double tolerance);//默认返回向量(b-a)的角度,即a处的角度。b处角度需要+PI。
+	void reverse();//将边改变为原方向的逆向
 };
 
 typedef vector<Edge> EdgeArray;
@@ -91,6 +95,8 @@ public:
 
 public:
 	void setContour(CP_Loop& loop);
+	void setContour(Contour& contour);
+	void reverse();
 	void getLoop(CP_Loop& result);
 	Contour(int domainID, ExPolygon* opolygon);
 	Contour(int domainID, ExPolygon* opolygon, ContourPos pos);
@@ -140,16 +146,18 @@ extern bool getVertexDirection(const VertexArray& vertexs, IntArray& vertexIds);
 extern double getAreaWithVertex(const VertexArray& vertexs, IntArray& vertexIds);
 //判断一个点是否在某个ExPolygon之内
 extern bool isInPolygon(const Vertex& vertex, const ExPolygon& polygon);
+//判断一条边是否在某个ExPolygon之内
+extern bool isInPolygon(const Edge& edge, const ExPolygon& polygon);
 //判断一个点是否在某个Domain之内
 extern bool isInDomain(const Vertex& vertex,const Domain& domain);
 //判断一个点是否在某个Contour构成的区域之内
 extern bool isInContour(const Vertex& vertex, const Contour& contour);
-//判断一个Contour1是否在另一个Contour2之内，true：完全在Contour2内，false：至少存在一个点在Contour2外
+//判断一个testContour是否在另一个contour之内，true：完全在contour内，false：至少存在一个点在contour外或在contour上
 extern bool isInContour(const Contour& testContour, const Contour& contour);
 //进行布尔运算的第一步：生成所有的新的边交点
 extern void makeIntersections(ExPolygon& a,ExPolygon& b, double tolerance, DescriptorArray& descriptors);
 //判断两条线段是否相交
-extern int getIntersection(ExPolygon& M, ExPolygon& N, Edge& m, Edge& n, double& x, double& y,double tolerance);
+extern int getIntersection(Edge& m, Edge& n, double& x, double& y,double tolerance);
 //在一条边oldEdge中插入一个点newVertex后，产生新边newEdge，使得原边变为(a,v)，并产生新边(v,b)。对所有涉及的属性进行更新
 extern void insertVertex(EdgeArray& edges, VertexArray& vertexs, int newVertex, int oldEdge, int newEdge, double tolerance, DescriptorArray& descriptors, int DesGroupId);
 //在a，b之间建立重合联系，考虑双向链表情况
@@ -163,4 +171,20 @@ extern void labeling(ExPolygon& a, ExPolygon& b, double tolerance);
 //对于当前的边是否存在一个重合的边，若存在，方向为同向或是逆向,据此打上标记
 extern void getEdgeLabel(Edge* edge, double tolerance);
 //进行布尔运算的第三步：搜集结果环
-extern void collectContour();
+extern void collectContour(ExPolygon& a, ExPolygon& b, ExPolygon& r, double tolerance, OperationFlag flag);
+//对暂时存储第三步结果的数据结构进行初始化
+extern void initResultPolygon(ExPolygon& r);
+//返回值：是否要包含当前边，若包含，以什么方向包含
+extern bool EdgeRule(Edge* edge, DirectionFlag& dir, OperationFlag operation, ExPolygon& a, ExPolygon& b);
+//collect操作，生成result环
+extern void Collect(Vertex* v, DirectionFlag& dir, Contour& result, OperationFlag operation, ExPolygon& a, ExPolygon& b, double tolerance);
+//将所有重合的边标记为已处理
+extern void markSharedEdges(Edge* edge, double tolerance);
+//进行布尔运算的第四步：将结果环进行组合
+extern void combineContours(ExPolygon& origin, ExPolygon& result);
+//默认两个Contour没有交叉，最多只有点的重合
+extern bool isInContourForced(const Contour& testContour, const Contour& contour);
+//验证当前多边形是否合法
+extern bool isLegal(ExPolygon& a, double tolerance);
+//验证当前loop是否合法
+extern bool isLegal(Contour& a, double tolerance);

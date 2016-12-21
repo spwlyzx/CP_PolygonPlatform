@@ -39,6 +39,14 @@ Edge::Edge(ExPolygon* poly) {
 	polygon = poly;
 }
 
+//将边改变为原方向的逆向
+void Edge::reverse()
+{
+	int temp = b;
+	b = a;
+	a = temp;
+}
+
 Descriptor::Descriptor(int origin, int gid, int did, ExPolygon* poly, DirFlag dir) {
 	vertex = origin;
 	direction = dir;
@@ -58,6 +66,38 @@ Vertex::Vertex(ExPolygon* poly) {
 	nextVertex = -1;
 	preVertex = -1;
 	polygon = poly;
+	prePoly = NULL;
+	nextPoly = NULL;
+}
+
+Vertex::Vertex(ExPolygon* poly, Vertex& pos)
+{
+	polygon = poly;
+	x = pos.x;
+	y = pos.y;
+	isCrossed = false;
+	D_plus = -1;
+	D_minus = -1;
+	previous = -1;
+	next = -1;
+	nextVertex = -1;
+	preVertex = -1;
+	prePoly = NULL;
+	nextPoly = NULL;
+}
+
+Vertex::Vertex(ExPolygon* poly, Vertex* pos)
+{
+	polygon = poly;
+	x = pos->x;
+	y = pos->y;
+	isCrossed = false;
+	D_plus = -1;
+	D_minus = -1;
+	previous = -1;
+	next = -1;
+	nextVertex = -1;
+	preVertex = -1;
 	prePoly = NULL;
 	nextPoly = NULL;
 }
@@ -224,6 +264,56 @@ void Contour::setContour(CP_Loop& loop)
 	}
 }
 
+//默认Contour没有标注内外环，只插入点
+void Contour::setContour(Contour& initContour)
+{
+	int size = initContour.vertexs.size();
+	if (size == 0)
+		return;
+	int base = polygon->vertexs.size();
+	VertexArray& initVertex = initContour.polygon->vertexs;
+	//插入点
+	for (int i = 0; i < size; i++) {
+		Vertex temp(polygon, initVertex[initContour.vertexs[i]]);
+		polygon->vertexs.push_back(temp);
+		vertexs.push_back(i + base);
+	}
+	////获取当前contour的AABB盒
+	//double x = polygon->vertexs[vertexs[0]].x;
+	//double y = polygon->vertexs[vertexs[0]].y;
+	//maxX = x;
+	//minX = x;
+	//maxY = y;
+	//minY = y;
+	//for (int i = 1; i < size; i++) {
+	//	x = polygon->vertexs[vertexs[i]].x;
+	//	y = polygon->vertexs[vertexs[i]].y;
+	//	if (x > maxX) {
+	//		maxX = x;
+	//	}
+	//	else if (x < minX) {
+	//		minX = x;
+	//	}
+	//	if (y > maxY) {
+	//		maxY = y;
+	//	}
+	//	else if (y < minY) {
+	//		minY = y;
+	//	}
+	//}
+	////插入边
+	//int j;
+	//base = polygon->edges.size();
+	//for (int i = 0; i < size; i++) {
+	//	j = (i + 1) % size;
+	//	Edge temp(vertexs[i], vertexs[j], polygon);
+	//	polygon->edges.push_back(temp);
+	//	edges.push_back(base + i);
+	//	polygon->vertexs[vertexs[i]].next = edges[i];
+	//	polygon->vertexs[vertexs[j]].previous = edges[i];
+	//}
+}
+
 //默认result中m_polygon,m_loopIDinRegion,m_regionIDinPolygon都已经赋值
 void Contour::getLoop(CP_Loop& result)
 {
@@ -231,6 +321,18 @@ void Contour::getLoop(CP_Loop& result)
 	int size = vertexs.size();
 	for (int i = 0; i < size; i++) {
 		pointsIDs.push_back(vertexs[i]);
+	}
+}
+
+//将整个环的方向改变为逆向
+void Contour::reverse()
+{
+	//改变点的顺序
+	std::reverse(vertexs.begin(), vertexs.end());
+	//改变0~(n-2)条边的次序，改变0~(n-1)条边的方向
+	std::reverse(edges.begin(), edges.end() - 1);
+	for (int edgesId : edges) {
+		polygon->edges[edgesId].reverse();
 	}
 }
 
@@ -287,13 +389,15 @@ double Edge::getAngle(bool isA, double tolerance)
 			toReturn = HALF_PI * 3;
 		}
 	}
-	double tan = y / x;
-	double degree = atan(tan);
-	if (x > 0) {
-		toReturn = degree > 0 ? degree : degree + DOUBLE_PI;
-	}
 	else {
-		toReturn = degree + PI;
+		double tan = y / x;
+		double degree = atan(tan);
+		if (x > 0) {
+			toReturn = degree > 0 ? degree : degree + DOUBLE_PI;
+		}
+		else {
+			toReturn = degree + PI;
+		}
 	}
 	if(!isA){
 		toReturn = toReturn > PI ? toReturn - PI : toReturn + PI;
@@ -307,7 +411,7 @@ void sortVertex(VertexArray& vertexs, IntArray& vertexIds, bool direction)
 	if (getVertexDirection(vertexs, vertexIds) == direction)
 		return;
 	else
-		reverse(vertexs.begin(),vertexs.end());
+		reverse(vertexIds.begin(), vertexIds.end());
 }
 
 //direction==true,点的序列为顺时针；direction==false,点的序列为逆时针
@@ -337,11 +441,20 @@ double getAreaWithVertex(const VertexArray& vertexs, IntArray& vertexIds)
 //判断一个点是否在某个ExPolygon之内
 bool isInPolygon(const Vertex& vertex, const ExPolygon& polygon)
 {
-	for (Domain domain : polygon.domains) {
+	for (const Domain& domain : polygon.domains) {
 		if (isInDomain(vertex, domain))
 			return true;
 	}
 	return false;
+}
+
+//判断一条边是否在某个ExPolygon之内
+bool isInPolygon(const Edge* edge, const ExPolygon& polygon)
+{
+	Vertex& a = edge->polygon->vertexs[edge->a];
+	Vertex& b = edge->polygon->vertexs[edge->b];
+	Vertex newVertex((a.x + b.x / 2), (a.y + b.y) / 2, edge->polygon);
+	return isInPolygon(newVertex, polygon);
 }
 
 //判断一个点是否在某个Domain之内
@@ -383,7 +496,7 @@ bool isInContour(const Vertex& v, const Contour& contour)
 	return oddNodes;
 }
 
-//判断一个Contour1是否在另一个Contour2之内，true：完全在Contour2内，false：至少存在一个点在Contour2外
+//判断一个testContour是否在另一个contour之内，true：完全在contour内，false：至少存在一个点在contour外或在contour上
 bool isInContour(const Contour& testContour, const Contour& contour)
 {
 	const VertexArray& vertexs = testContour.polygon->vertexs;
@@ -394,6 +507,19 @@ bool isInContour(const Contour& testContour, const Contour& contour)
 			return false;
 	}
 	return true;
+}
+
+//默认两个Contour没有交叉，最多只有点的重合
+bool isInContourForced(const Contour& testContour, const Contour& contour)
+{
+	const VertexArray& vertexs = testContour.polygon->vertexs;
+	const IntArray& vertexIds = testContour.vertexs;
+	int size = vertexIds.size();
+	for (int i = 0; i < size; i++) {
+		if (isInContour(vertexs[vertexIds[i]], contour))
+			return true;
+	}
+	return false;
 }
 
 //进行布尔运算的第一步：生成所有的新的边交点
@@ -414,7 +540,7 @@ void makeIntersections(ExPolygon& a, ExPolygon& b, double tolerance, DescriptorA
 					contourB = &domainB.contours[k];
 					for (int i = 0; i < (int)contourA->edges.size(); i++) {
 						for (int j = 0; j < (int)contourB->edges.size(); j++) {
-							int flag = getIntersection(a, b, edgesA[contourA->edges[i]], edgesB[contourB->edges[j]], x, y, tolerance);
+							int flag = getIntersection(edgesA[contourA->edges[i]], edgesB[contourB->edges[j]], x, y, tolerance);
 							if (flag == 0) {
 								continue;
 							}
@@ -503,10 +629,10 @@ void makeIntersections(ExPolygon& a, ExPolygon& b, double tolerance, DescriptorA
 //18:部分重合，重合点为(b,c)，另一个交点为a
 //19:部分重合，重合点为(b,d)，另一个交点为c
 //20:部分重合，重合点为(b,d)，另一个交点为a
-int getIntersection(ExPolygon& M, ExPolygon& N, Edge& m, Edge& n, double& x, double& y, double tolerance)
+int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 {
-	const VertexArray& Mv = M.vertexs;
-	const VertexArray& Nv = N.vertexs;
+	const VertexArray& Mv = m.polygon->vertexs;
+	const VertexArray& Nv = n.polygon->vertexs;
 	double ax = Mv[m.a].x;
 	double ay = Mv[m.a].y;
 	double bx = Mv[m.b].x;
@@ -556,30 +682,68 @@ int getIntersection(ExPolygon& M, ExPolygon& N, Edge& m, Edge& n, double& x, dou
 
 	double abc = (ax - cx)*(by - cy) - (ay - cy)*(bx - cx);
 	double abd = (ax - dx)*(by - dy) - (ay - dy)*(bx - dx);
-	double condition1 = abc*abd;
+	int ABC = 0, ABD = 0;
+	if (abc > tolerance) {
+		ABC = 1;
+	}
+	else if (abc < -tolerance) {
+		ABC = -1;
+	}
+	else {
+		ABC = 0;
+	}
+	if (abd > tolerance) {
+		ABD = 1;
+	}
+	else if (abd < -tolerance) {
+		ABD = -1;
+	}
+	else {
+		ABD = 0;
+	}
+	int condition1 = ABC*ABD;
 
-	if (condition1 > tolerance) {
+	if (condition1 > 0) {
 		return 0;
 	}
-	else if (abs(condition1) <= tolerance) {
+	else if (condition1 == 0) {
 		double cda = (cx - ax)*(dy - ay) - (cy - ay)*(dx - ax);
 		double cdb = cda + abc - abd;
-		double condition2 = cda*cdb;
+		int CDA = 0, CDB = 0;
+		if (cda > tolerance) {
+			CDA = 1;
+		}
+		else if (cda < -tolerance) {
+			CDA = -1;
+		}
+		else {
+			CDA = 0;
+		}
+		if (cdb > tolerance) {
+			CDB = 1;
+		}
+		else if (cdb < -tolerance) {
+			CDB = -1;
+		}
+		else {
+			CDB = 0;
+		}
+		int condition2 = CDA*CDB;
 
-		if (condition2 > tolerance) {
+		if (condition2 > 0) {
 			return 0;
 		}
-		else if (abs(condition2) <= tolerance) {
-			if (abs(abd) > tolerance && abs(cdb) > tolerance) {
+		else if (condition2 == 0) {
+			if (ABD != 0 && CDB != 0) {
 				return 7;
 			}
-			else if (abs(abc) > tolerance && abs(cdb) > tolerance) {
+			else if (ABC!=0 && CDB != 0) {
 				return 8;
 			}
-			else if (abs(abd) > tolerance && abs(cda) > tolerance) {
+			else if (ABD != 0 && CDA!=0) {
 				return 9;
 			}
-			else if (abs(abc) > tolerance && abs(cda) > tolerance) {
+			else if (ABC != 0 && CDA != 0) {
 				return 10;
 			}
 			if (abs(ax - cx) + abs(ay - cy) <= tolerance) {
@@ -627,7 +791,7 @@ int getIntersection(ExPolygon& M, ExPolygon& N, Edge& m, Edge& n, double& x, dou
 			return 6;
 		}
 		else {
-			if (abs(abc) <= tolerance) {
+			if (ABC == 0) {
 				x = cx;
 				y = cy;
 				return 4;
@@ -642,13 +806,32 @@ int getIntersection(ExPolygon& M, ExPolygon& N, Edge& m, Edge& n, double& x, dou
 	else {
 		double cda = (cx - ax)*(dy - ay) - (cy - ay)*(dx - ax);
 		double cdb = cda + abc - abd;
-		double condition2 = cda*cdb;
+		int CDA = 0, CDB = 0;
+		if (cda > tolerance) {
+			CDA = 1;
+		}
+		else if (cda < -tolerance) {
+			CDA = -1;
+		}
+		else {
+			CDA = 0;
+		}
+		if (cdb > tolerance) {
+			CDB = 1;
+		}
+		else if (cdb < -tolerance) {
+			CDB = -1;
+		}
+		else {
+			CDB = 0;
+		}
+		int condition2 = CDA*CDB;
 
-		if (condition2 > tolerance) {
+		if (condition2 > 0) {
 			return 0;
 		}
-		else if(abs(condition2) <= tolerance) {
-			if (abs(cda) <= tolerance) {
+		else if(condition2 == 0) {
+			if (CDA == 0) {
 				x = ax;
 				y = by;
 				return 2;
@@ -802,14 +985,14 @@ void sortDescriptors(vector<Descriptor*>& descriptors)
 	}
 }
 
-//对Expolygon a中edge和contour进行Labeling
+//进行布尔运算的第二步：对Expolygon a中edge和contour进行Labeling
 void labeling(ExPolygon& a, ExPolygon& b, double tolerance)
 {
 	EdgeArray& edgesA = a.edges;
 	VertexArray& vertexsA = a.vertexs;
 
-	for (Domain domainA : a.domains) {
-		for (Contour contourA : domainA.contours) {
+	for (Domain& domainA : a.domains) {
+		for (Contour& contourA : domainA.contours) {
 			bool isSected = false;
 			for (int vertexIdA : contourA.vertexs) {
 				if (vertexsA[vertexIdA].isCrossed) {
@@ -827,7 +1010,7 @@ void labeling(ExPolygon& a, ExPolygon& b, double tolerance)
 					}
 					else {
 						if (i == 0) {
-							if (isInPolygon(vertexsA[temp->a], b)) {
+							if (isInPolygon(temp, b)) {
 								temp->label = EdgeLabel::E_INSIDE;
 							}
 							else {
@@ -928,4 +1111,344 @@ void getEdgeLabel(Edge* edge, double tolerance)
 			return;
 		}
 	}
+}
+
+//进行布尔运算的第三步：搜集结果环，最后的结果r中边的信息不可靠
+void collectContour(ExPolygon& a, ExPolygon& b, ExPolygon& r, double tolerance, OperationFlag flag)
+{
+	initResultPolygon(r);
+	ContourArray& resultContours = r.domains[0].contours;
+	for (Domain& domainA : a.domains) {
+		for (Contour& contourA : domainA.contours) {
+			if (contourA.label != ContourLabel::C_ISECTED) {
+				if (contourA.label == C_INSIDE && flag == INTERSECTION 
+					|| contourA.label == C_OUTSIDE && flag == UNION
+					|| contourA.label == C_OUTSIDE && flag == DIFFERENCE_AB) {
+					Contour temp(0, &r);
+					resultContours.push_back(temp);
+					resultContours[resultContours.size()-1].setContour(contourA);
+				}
+			}
+			else {
+				int size = contourA.edges.size();
+				DirectionFlag dir;
+				for (int i = 0; i < size; i++) {
+					if (EdgeRule(&a.edges[contourA.edges[i]], dir, flag, a, b) && !a.edges[contourA.edges[i]].mark) {
+						Contour temp(0, &r);
+						int index = resultContours.size();
+						resultContours.push_back(temp);
+						if (dir == FORWARD) {
+							Collect(&a.vertexs[a.edges[contourA.edges[i]].a], dir, resultContours[index], flag, a, b, tolerance);
+						}
+						else {
+							Collect(&a.vertexs[a.edges[contourA.edges[i]].b], dir, resultContours[index], flag, a, b, tolerance);
+						}
+					}
+				}
+			}
+		}
+	}
+	for (Domain& domainB : b.domains) {
+		for (Contour& contourB : domainB.contours) {
+			if (contourB.label != ContourLabel::C_ISECTED) {
+				if (contourB.label == C_INSIDE && flag == INTERSECTION || contourB.label == C_OUTSIDE && flag == UNION) {
+					Contour temp(0, &r);
+					resultContours.push_back(temp);
+					resultContours[resultContours.size() - 1].setContour(contourB);
+				}
+				else if (contourB.label == C_INSIDE && flag == DIFFERENCE_AB) {
+					Contour temp(0, &r);
+					resultContours.push_back(temp);
+					resultContours[resultContours.size() - 1].setContour(contourB);
+					resultContours[resultContours.size() - 1].reverse();
+				}
+			}
+			else {
+				int size = contourB.edges.size();
+				DirectionFlag dir;
+				for (int i = 0; i < size; i++) {
+					if (EdgeRule(&b.edges[contourB.edges[i]], dir, flag, a, b) && !b.edges[contourB.edges[i]].mark) {
+						Contour temp(0, &r);
+						int index = resultContours.size();
+						resultContours.push_back(temp);
+						if (dir == FORWARD) {
+							Collect(&b.vertexs[b.edges[contourB.edges[i]].a], dir, resultContours[index], flag, a, b, tolerance);
+						}
+						else {
+							Collect(&b.vertexs[b.edges[contourB.edges[i]].b], dir, resultContours[index], flag, a, b, tolerance);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+//对暂时存储第三步结果的数据结构进行初始化
+void initResultPolygon(ExPolygon& r)
+{
+	r.clearAll();
+	Domain domain(&r);
+	domain.idInPolygon = 0;
+	r.domains.push_back(domain);
+}
+
+//返回值：是否要包含当前边，若包含，以什么方向包含
+bool EdgeRule(Edge* edge, DirectionFlag& dir, OperationFlag operation, ExPolygon& a, ExPolygon& b)
+{
+	EdgeLabel flag = edge->label;
+	if (operation == INTERSECTION) {
+		if (flag == E_INSIDE || flag == E_SHARED1 || flag == E_SHARED2) {
+			dir = FORWARD;
+			return true;
+		}
+	}
+	else if (operation == UNION){
+		if (flag == E_OUTSIDE || flag == E_SHARED1) {
+			dir = FORWARD;
+			return true;
+		}
+	}
+	else if (operation == DIFFERENCE_AB) {
+		if ((flag == E_OUTSIDE || flag == E_SHARED2) && edge->polygon == &a) {
+			dir = FORWARD;
+			return true;
+		}
+		if ((flag == E_INSIDE || flag == E_SHARED2) && edge->polygon == &b) {
+			dir = BACKWARD;
+			return true;
+		}
+	}
+	return false;
+}
+
+//collect操作，生成result环
+void Collect(Vertex* v, DirectionFlag& dir, Contour& result, OperationFlag operation, ExPolygon& a, ExPolygon& b, double tolerance)
+{
+	VertexArray& vertexs = result.polygon->vertexs;
+	int index;
+	Edge* edgeTemp;
+
+	if (dir == FORWARD) {
+		edgeTemp = &v->polygon->edges[v->next];
+	}
+	else {
+		edgeTemp = &v->polygon->edges[v->previous];
+	}
+
+	bool failure = false;
+
+	do {
+		index = vertexs.size();
+		Vertex temp(result.polygon, v);
+		vertexs.push_back(temp);
+		result.vertexs.push_back(index);
+
+		edgeTemp->mark = true;
+		if (edgeTemp->label == E_SHARED1 || edgeTemp->label == E_SHARED2) {
+			markSharedEdges(edgeTemp, tolerance);
+		}
+		if (dir == FORWARD) {
+			v = &v->polygon->vertexs[v->polygon->edges[v->next].b];
+		}
+		else {
+			v = &v->polygon->vertexs[v->polygon->edges[v->previous].a];
+		}
+		if (v->isCrossed) {
+			Descriptor* d;
+			DescriptorArray* descriptors = v->polygon->descriptors;
+			if (dir == FORWARD) {
+				d = &descriptors->at(descriptors->at(v->D_plus).pre);
+			}
+			else {
+				d = &descriptors->at(descriptors->at(v->D_minus).pre);
+			}
+			bool notFound = true;
+			bool isNext;
+			Edge* tempE;
+			Vertex* tempV;
+			int begin = d->Did;
+			do {
+				tempV = &d->polygon->vertexs[d->vertex];
+				if (d->direction == D_NEXT) {
+					tempE = &tempV->polygon->edges[tempV->next];
+					isNext = true;
+				}
+				else {
+					tempE = &tempV->polygon->edges[tempV->previous];
+					isNext = false;
+				}
+				DirectionFlag newDir;
+				if (!tempE->mark && EdgeRule(tempE, newDir, operation, a, b)) {
+					v = tempV;
+					if ((isNext && newDir == FORWARD) || (!isNext && newDir == BACKWARD)) {
+						dir = newDir;
+						notFound = false;
+					}
+				}
+				d = &descriptors->at(d->pre);
+				if (d->Did == begin) {
+					notFound = false;
+					failure = true;
+				}
+			} while (notFound);
+		}
+		if (dir == FORWARD) {
+			edgeTemp = &v->polygon->edges[v->next];
+		}
+		else {
+			edgeTemp = &v->polygon->edges[v->previous];
+		}
+	} while (!edgeTemp->mark && !failure);
+}
+
+//将所有重合的边标记为已处理
+void markSharedEdges(Edge* edge, double tolerance)
+{
+	Vertex* a = &edge->polygon->vertexs[edge->a];
+	Vertex* b = &edge->polygon->vertexs[edge->b];
+
+	if (edge->label == E_SHARED1) {
+		Edge* tempE;
+		Vertex* temp = &a->nextPoly->vertexs[a->nextVertex];
+		while (temp != a) {
+			tempE = &temp->polygon->edges[temp->next];
+			if (abs(tempE->polygon->vertexs[tempE->b].x - b->x)+ abs(tempE->polygon->vertexs[tempE->b].y - b->y) <= tolerance) {
+				tempE->mark = true;
+			}
+			temp = &temp->nextPoly->vertexs[temp->nextVertex];
+		}
+	}
+	if (edge->label == E_SHARED2) {
+		Edge* tempE;
+		Vertex* temp = &a->nextPoly->vertexs[a->nextVertex];
+		while (temp != a) {
+			tempE = &temp->polygon->edges[temp->previous];
+			if (abs(tempE->polygon->vertexs[tempE->a].x - b->x)+ abs(tempE->polygon->vertexs[tempE->a].y - b->y) <= tolerance) {
+				tempE->mark = true;
+			}
+			temp = &temp->nextPoly->vertexs[temp->nextVertex];
+		}
+	}
+}
+
+//进行布尔运算的第四步：将结果环进行组合
+void combineContours(ExPolygon& origin, ExPolygon& result)
+{
+	Domain domain(&origin);
+	domain.idInPolygon = 1;
+	origin.domains.push_back(domain);
+	ContourArray& originContours = origin.domains[0].contours;
+	for (int i = 0; i < originContours.size();) {
+		if (getVertexDirection(origin.vertexs, originContours[i].vertexs)) {
+			originContours[i].position = CP_INCONTOUR;
+			origin.domains[1].contours.push_back(originContours[i]);
+			originContours.erase(originContours.begin() + i);
+		}
+		else {
+			originContours[i].position = CP_OUTCONTOUR;
+			i++;
+		}
+	}
+	int outSize = origin.domains[0].contours.size();
+	vector<int> out;
+	for (int i = 0; i < outSize; i++) {
+		out.push_back(i);
+	}
+	ContourArray& outArray = origin.domains[0].contours;
+	for (int i = 0; i < outSize;i++) {
+		for (int j = i + 1; j < outSize;j++) {
+			if (!isInContourForced(outArray[out[i]], outArray[out[j]])) {
+				int temp = out[i];
+				out[i] = out[j];
+				out[j] = temp;
+			}
+		}
+	}
+	for (int i = 0; i < outSize;i++) {
+		Domain tempDomain(&result);
+		tempDomain.idInPolygon = i;
+		result.domains.push_back(tempDomain);
+		Contour tempContour(i, &result, ContourPos::CP_OUTCONTOUR);
+		result.domains[i].contours.push_back(tempContour);
+		result.domains[i].contours[0].setContour(outArray[out[i]]);
+	}
+	for (Contour& incontour : origin.domains[1].contours) {
+		for (int i = 0; i < outSize; i++) {
+			if (isInContourForced(incontour,outArray[out[i]])) {
+				Contour tempContour(i, &result, ContourPos::CP_INCONTOUR);
+				result.domains[i].contours.push_back(tempContour);
+				result.domains[i].contours[result.domains[i].contours.size() - 1].setContour(incontour);
+			}
+		}
+	}
+}
+
+//验证当前多边形是否合法
+bool isLegal(ExPolygon& a, double tolerance)
+{
+	//不足一个区域考虑不存在该多边形
+	if (a.domains.size() < 1) {
+		return true;
+	}
+	//各个区域内所有边不相交，除非是顶点重合
+	for (int i = 0; i < a.edges.size(); i++) {
+		for (int j = 0; j < a.edges.size(); j++) {
+			if (i == j)
+				continue;
+			double x, y;
+			int condition = getIntersection(a.edges[i], a.edges[j], x, y, tolerance);
+			if (!(condition == 0 || (condition >= 7 && condition <= 10))) {
+				return false;
+			}
+		}
+	}
+	//各个区域中，有且只有一个外环，且内环都在外环内
+	for (Domain& domain : a.domains) {
+		for (Contour& contour : domain.contours) {
+			//所有内环合法，为简单多边形
+			if (!isLegal(contour, tolerance)) {
+				return false;
+			}
+		}
+		//若有内环，内环都在外环内，且内环不相互嵌套
+		if (domain.contours.size() > 1) {
+			for (int i = 1; i < domain.contours.size(); i++) {
+				if (!isInContourForced(domain.contours[i],domain.contours[0])) {
+					return false;
+				}
+			}
+			for (int i = 1; i < domain.contours.size(); i++) {
+				for (int j = 1; j < domain.contours.size(); j++) {
+					if (i == j)
+						continue;
+					if (isInContourForced(domain.contours[i], domain.contours[j])) {
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return true;
+}
+
+//验证当前loop是否合法
+bool isLegal(Contour& a, double tolerance)
+{
+	//EdgeArray& edges = a.polygon->edges;
+	if (a.edges.size() <= 2) {
+		return false;
+	}
+	//for (int i = 0; i < a.edges.size(); i++) {
+	//	for (int j = 0; j < a.edges.size(); j++) {
+	//		if (i == j)
+	//			continue;
+	//		double x, y;
+	//		int condition = getIntersection(edges[a.edges[i]], edges[a.edges[j]], x, y, tolerance);
+	//		if (!(condition == 0 || (condition >= 7 && condition <= 10))) {
+	//			return false;
+	//		}
+	//	}
+	//}
+	return true;
 }

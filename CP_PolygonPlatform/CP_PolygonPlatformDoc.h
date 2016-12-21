@@ -62,9 +62,8 @@ public:
 	//用于布尔运算计算的中间数据类型
 	ExPolygon ex_A;
 	ExPolygon ex_B;
-
-	//用于储存布尔运算结果
-	ExPolygon ex_result;
+	ExPolygon ex_result; //边的信息不可靠，用于储存生成的所有contour
+	ExPolygon ex_result_true; //用于存放真正的结果
 	bool showBooleanResult;// true: 显示布尔运算结果; false: 不显示布尔运算结果
 	DescriptorArray descriptors;
 
