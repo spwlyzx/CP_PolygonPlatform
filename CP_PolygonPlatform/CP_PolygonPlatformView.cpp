@@ -479,7 +479,7 @@ void CCP_PolygonPlatformView::OnDraw(CDC* pDC)
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
 			0, 0, 0,
 			0, 0, 0,
-			3);
+			5);
 		gb_drawPolygonPoint(pDC, pDoc->m_result,
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
 			0, 0, 0,
@@ -1707,8 +1707,21 @@ void CCP_PolygonPlatformView::OnCheck()
 		return;
 
 	initExPolygon();
+
+	double dur;
+	clock_t start, end;
+	start = clock();
+
 	bool isA = isLegal(pDoc->ex_A, pDoc->m_tolerance);
 	bool isB = isLegal(pDoc->ex_B, pDoc->m_tolerance);
+
+	end = clock();
+	dur = (double)(end - start);
+
+	CString temp;
+	temp.Format("%f", dur);
+	MessageBox(temp);
+
 	if (!isA && !isB) {
 		MessageBox("多边形A和B都不合法！");
 	}
@@ -1774,6 +1787,11 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 		MessageBox("多边形B不合法！");
 		return;
 	}
+
+	double dur;
+	clock_t start, end;
+	start = clock();
+
 	makeIntersections(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance, pDoc->descriptors);
 	labeling(pDoc->ex_A, pDoc->ex_B, pDoc->m_tolerance);
 	labeling(pDoc->ex_B, pDoc->ex_A, pDoc->m_tolerance);
@@ -1792,6 +1810,14 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 		break;
 	}
 	combineContours(pDoc->ex_result, pDoc->ex_result_true);
+
+	end = clock();
+	dur = (double)(end - start);
+
+	CString temp;
+	temp.Format("%f", dur);
+	MessageBox(temp);
+
 	displayResult();
 }
 

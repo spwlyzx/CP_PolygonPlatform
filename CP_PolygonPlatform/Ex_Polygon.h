@@ -100,6 +100,7 @@ public:
 	void getLoop(CP_Loop& result);
 	Contour(int domainID, ExPolygon* opolygon);
 	Contour(int domainID, ExPolygon* opolygon, ContourPos pos);
+	void buildup();
 };
 
 typedef vector<Contour> ContourArray;

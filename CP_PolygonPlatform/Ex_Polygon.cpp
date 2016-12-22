@@ -112,7 +112,7 @@ Vertex::Vertex(double ix, double iy, ExPolygon* poly) {
 	next = -1;
 	nextVertex = -1;
 	polygon = poly;
-	preVertex = -1;	
+	preVertex = -1;
 	prePoly = NULL;
 	nextPoly = NULL;
 }
@@ -127,7 +127,7 @@ Vertex::Vertex(CP_Point& point, ExPolygon* poly) {
 	next = -1;
 	nextVertex = -1;
 	polygon = poly;
-	preVertex = -1;	
+	preVertex = -1;
 	prePoly = NULL;
 	nextPoly = NULL;
 }
@@ -191,7 +191,8 @@ void Domain::setDomain(CP_Region& region)
 		ContourPos flag;
 		if (i == 0) {
 			flag = CP_OUTCONTOUR;
-		}else{
+		}
+		else {
 			flag = CP_INCONTOUR;
 		}
 		Contour contour(idInPolygon, this->polygon, flag);
@@ -223,11 +224,11 @@ void Contour::setContour(CP_Loop& loop)
 		return;
 
 	//插入点
-	for (int i = 0; i < size;i++) {
+	for (int i = 0; i < size; i++) {
 		vertexs.push_back(point_id[i]);
 	}
 	//保证点的次序合法
-	sortVertex(polygon->vertexs,vertexs, position != CP_OUTCONTOUR);
+	sortVertex(polygon->vertexs, vertexs, position != CP_OUTCONTOUR);
 	//获取当前contour的AABB盒
 	double x = polygon->vertexs[vertexs[0]].x;
 	double y = polygon->vertexs[vertexs[0]].y;
@@ -256,9 +257,9 @@ void Contour::setContour(CP_Loop& loop)
 	int base = polygon->edges.size();
 	for (int i = 0; i < size; i++) {
 		j = (i + 1) % size;
-		Edge temp(vertexs[i],vertexs[j],polygon);
+		Edge temp(vertexs[i], vertexs[j], polygon);
 		polygon->edges.push_back(temp);
-		edges.push_back(base+i);
+		edges.push_back(base + i);
 		polygon->vertexs[vertexs[i]].next = edges[i];
 		polygon->vertexs[vertexs[j]].previous = edges[i];
 	}
@@ -278,40 +279,40 @@ void Contour::setContour(Contour& initContour)
 		polygon->vertexs.push_back(temp);
 		vertexs.push_back(i + base);
 	}
-	////获取当前contour的AABB盒
-	//double x = polygon->vertexs[vertexs[0]].x;
-	//double y = polygon->vertexs[vertexs[0]].y;
-	//maxX = x;
-	//minX = x;
-	//maxY = y;
-	//minY = y;
-	//for (int i = 1; i < size; i++) {
-	//	x = polygon->vertexs[vertexs[i]].x;
-	//	y = polygon->vertexs[vertexs[i]].y;
-	//	if (x > maxX) {
-	//		maxX = x;
-	//	}
-	//	else if (x < minX) {
-	//		minX = x;
-	//	}
-	//	if (y > maxY) {
-	//		maxY = y;
-	//	}
-	//	else if (y < minY) {
-	//		minY = y;
-	//	}
-	//}
+	//获取当前contour的AABB盒
+	double x = polygon->vertexs[vertexs[0]].x;
+	double y = polygon->vertexs[vertexs[0]].y;
+	maxX = x;
+	minX = x;
+	maxY = y;
+	minY = y;
+	for (int i = 1; i < size; i++) {
+		x = polygon->vertexs[vertexs[i]].x;
+		y = polygon->vertexs[vertexs[i]].y;
+		if (x > maxX) {
+			maxX = x;
+		}
+		else if (x < minX) {
+			minX = x;
+		}
+		if (y > maxY) {
+			maxY = y;
+		}
+		else if (y < minY) {
+			minY = y;
+		}
+	}
 	////插入边
-	//int j;
-	//base = polygon->edges.size();
-	//for (int i = 0; i < size; i++) {
-	//	j = (i + 1) % size;
-	//	Edge temp(vertexs[i], vertexs[j], polygon);
-	//	polygon->edges.push_back(temp);
-	//	edges.push_back(base + i);
-	//	polygon->vertexs[vertexs[i]].next = edges[i];
-	//	polygon->vertexs[vertexs[j]].previous = edges[i];
-	//}
+	int j;
+	base = polygon->edges.size();
+	for (int i = 0; i < size; i++) {
+		j = (i + 1) % size;
+		Edge temp(vertexs[i], vertexs[j], polygon);
+		polygon->edges.push_back(temp);
+		edges.push_back(base + i);
+		polygon->vertexs[vertexs[i]].next = edges[i];
+		polygon->vertexs[vertexs[j]].previous = edges[i];
+	}
 }
 
 //默认result中m_polygon,m_loopIDinRegion,m_regionIDinPolygon都已经赋值
@@ -333,6 +334,46 @@ void Contour::reverse()
 	std::reverse(edges.begin(), edges.end() - 1);
 	for (int edgesId : edges) {
 		polygon->edges[edgesId].reverse();
+	}
+}
+
+//建立整个环中的边以及最大最小盒
+void Contour::buildup()
+{
+	int size = vertexs.size();
+	//获取当前contour的AABB盒
+	double x = polygon->vertexs[vertexs[0]].x;
+	double y = polygon->vertexs[vertexs[0]].y;
+	maxX = x;
+	minX = x;
+	maxY = y;
+	minY = y;
+	for (int i = 1; i < size; i++) {
+		x = polygon->vertexs[vertexs[i]].x;
+		y = polygon->vertexs[vertexs[i]].y;
+		if (x > maxX) {
+			maxX = x;
+		}
+		else if (x < minX) {
+			minX = x;
+		}
+		if (y > maxY) {
+			maxY = y;
+		}
+		else if (y < minY) {
+			minY = y;
+		}
+	}
+	////插入边
+	int j;
+	int base = polygon->edges.size();
+	for (int i = 0; i < size; i++) {
+		j = (i + 1) % size;
+		Edge temp(vertexs[i], vertexs[j], polygon);
+		polygon->edges.push_back(temp);
+		edges.push_back(base + i);
+		polygon->vertexs[vertexs[i]].next = edges[i];
+		polygon->vertexs[vertexs[j]].previous = edges[i];
 	}
 }
 
@@ -399,7 +440,7 @@ double Edge::getAngle(bool isA, double tolerance)
 			toReturn = degree + PI;
 		}
 	}
-	if(!isA){
+	if (!isA) {
 		toReturn = toReturn > PI ? toReturn - PI : toReturn + PI;
 	}
 	return toReturn;
@@ -463,7 +504,7 @@ bool isInDomain(const Vertex& v, const Domain& domain)
 	if (!isInContour(v, domain.contours[0]))
 		return false;
 	int size = domain.contours.size();
-	for (int j = 0; j < size; j++) {
+	for (int j = 1; j < size; j++) {
 		if (isInContour(v, domain.contours[j]))
 			return false;
 	}
@@ -475,9 +516,11 @@ bool isInContour(const Vertex& v, const Contour& contour)
 {
 	bool oddNodes = false;
 	double x = v.x;
-	double y = v.x;
-	if (x<contour.minX || x>contour.maxX || y<contour.minY || y>contour.maxY)
-		return false;
+	double y = v.y;
+	if (contour.maxX != contour.minX && contour.maxY != contour.minY) {
+		if (x<contour.minX || x>contour.maxX || y<contour.minY || y>contour.maxY)
+			return false;
+	}
 	const EdgeArray& edges = contour.polygon->edges;
 	const VertexArray& vertexs = contour.polygon->vertexs;
 	const IntArray& edgeIds = contour.edges;
@@ -642,7 +685,7 @@ int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 	double dx = Nv[n.b].x;
 	double dy = Nv[n.b].y;
 	double max_mx = 0, min_mx = 0, max_nx = 0, min_nx = 0, max_my = 0, min_my = 0, max_ny = 0, min_ny = 0;
-	
+
 	if (ax >= bx) {
 		double max_mx = ax;
 		double min_mx = bx;
@@ -737,10 +780,10 @@ int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 			if (ABD != 0 && CDB != 0) {
 				return 7;
 			}
-			else if (ABC!=0 && CDB != 0) {
+			else if (ABC != 0 && CDB != 0) {
 				return 8;
 			}
-			else if (ABD != 0 && CDA!=0) {
+			else if (ABD != 0 && CDA != 0) {
 				return 9;
 			}
 			else if (ABC != 0 && CDA != 0) {
@@ -830,7 +873,7 @@ int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 		if (condition2 > 0) {
 			return 0;
 		}
-		else if(condition2 == 0) {
+		else if (condition2 == 0) {
 			if (CDA == 0) {
 				x = ax;
 				y = by;
@@ -924,7 +967,7 @@ void combine(Vertex& a, Vertex& b, int aid, int bid, DescriptorArray& descriptor
 
 		int groupid = descriptors[b.D_plus].groupid;
 		Vertex* now = &b.nextPoly->vertexs[b.nextVertex];
-		while (descriptors[now->D_plus].groupid!=groupid) {
+		while (descriptors[now->D_plus].groupid != groupid) {
 			descriptors[now->D_plus].groupid = groupid;
 			descriptors[now->D_minus].groupid = groupid;
 			now = &now->nextPoly->vertexs[now->nextVertex];
@@ -1003,10 +1046,10 @@ void labeling(ExPolygon& a, ExPolygon& b, double tolerance)
 			if (isSected) {
 				contourA.label = ContourLabel::C_ISECTED;
 				int size = contourA.edges.size();
-				for (int i = 0; i < size;i++) {
+				for (int i = 0; i < size; i++) {
 					Edge* temp = &edgesA[contourA.edges[i]];
 					if (vertexsA[temp->a].isCrossed || vertexsA[temp->b].isCrossed) {
-						getEdgeLabel(temp,tolerance);
+						getEdgeLabel(temp, tolerance);
 					}
 					else {
 						if (i == 0) {
@@ -1045,7 +1088,7 @@ void getEdgeLabel(Edge* edge, double tolerance)
 		double nowAngle = descriptors->at(va.D_minus).angle;
 		double pre = descriptors->at(descriptors->at(va.D_minus).pre).angle;
 		DirFlag preFlag = descriptors->at(descriptors->at(va.D_minus).pre).direction;
-		if (abs(pre - nowAngle)<=tolerance) {
+		if (abs(pre - nowAngle) <= tolerance) {
 			if (preFlag == DirFlag::D_PREVIOUS) {
 				edge->label = EdgeLabel::E_SHARED2;
 				return;
@@ -1057,7 +1100,7 @@ void getEdgeLabel(Edge* edge, double tolerance)
 		}
 		double next = descriptors->at(descriptors->at(va.D_minus).next).angle;
 		DirFlag nextFlag = descriptors->at(descriptors->at(va.D_minus).next).direction;
-		if (abs(next - nowAngle)<=tolerance) {
+		if (abs(next - nowAngle) <= tolerance) {
 			if (nextFlag == DirFlag::D_PREVIOUS) {
 				edge->label = EdgeLabel::E_SHARED2;
 				return;
@@ -1121,12 +1164,12 @@ void collectContour(ExPolygon& a, ExPolygon& b, ExPolygon& r, double tolerance, 
 	for (Domain& domainA : a.domains) {
 		for (Contour& contourA : domainA.contours) {
 			if (contourA.label != ContourLabel::C_ISECTED) {
-				if (contourA.label == C_INSIDE && flag == INTERSECTION 
+				if (contourA.label == C_INSIDE && flag == INTERSECTION
 					|| contourA.label == C_OUTSIDE && flag == UNION
 					|| contourA.label == C_OUTSIDE && flag == DIFFERENCE_AB) {
 					Contour temp(0, &r);
 					resultContours.push_back(temp);
-					resultContours[resultContours.size()-1].setContour(contourA);
+					resultContours[resultContours.size() - 1].setContour(contourA);
 				}
 			}
 			else {
@@ -1203,7 +1246,7 @@ bool EdgeRule(Edge* edge, DirectionFlag& dir, OperationFlag operation, ExPolygon
 			return true;
 		}
 	}
-	else if (operation == UNION){
+	else if (operation == UNION) {
 		if (flag == E_OUTSIDE || flag == E_SHARED1) {
 			dir = FORWARD;
 			return true;
@@ -1313,7 +1356,7 @@ void markSharedEdges(Edge* edge, double tolerance)
 		Vertex* temp = &a->nextPoly->vertexs[a->nextVertex];
 		while (temp != a) {
 			tempE = &temp->polygon->edges[temp->next];
-			if (abs(tempE->polygon->vertexs[tempE->b].x - b->x)+ abs(tempE->polygon->vertexs[tempE->b].y - b->y) <= tolerance) {
+			if (abs(tempE->polygon->vertexs[tempE->b].x - b->x) + abs(tempE->polygon->vertexs[tempE->b].y - b->y) <= tolerance) {
 				tempE->mark = true;
 			}
 			temp = &temp->nextPoly->vertexs[temp->nextVertex];
@@ -1324,7 +1367,7 @@ void markSharedEdges(Edge* edge, double tolerance)
 		Vertex* temp = &a->nextPoly->vertexs[a->nextVertex];
 		while (temp != a) {
 			tempE = &temp->polygon->edges[temp->previous];
-			if (abs(tempE->polygon->vertexs[tempE->a].x - b->x)+ abs(tempE->polygon->vertexs[tempE->a].y - b->y) <= tolerance) {
+			if (abs(tempE->polygon->vertexs[tempE->a].x - b->x) + abs(tempE->polygon->vertexs[tempE->a].y - b->y) <= tolerance) {
 				tempE->mark = true;
 			}
 			temp = &temp->nextPoly->vertexs[temp->nextVertex];
@@ -1340,6 +1383,7 @@ void combineContours(ExPolygon& origin, ExPolygon& result)
 	origin.domains.push_back(domain);
 	ContourArray& originContours = origin.domains[0].contours;
 	for (int i = 0; i < originContours.size();) {
+		originContours[i].buildup();
 		if (getVertexDirection(origin.vertexs, originContours[i].vertexs)) {
 			originContours[i].position = CP_INCONTOUR;
 			origin.domains[1].contours.push_back(originContours[i]);
@@ -1356,8 +1400,8 @@ void combineContours(ExPolygon& origin, ExPolygon& result)
 		out.push_back(i);
 	}
 	ContourArray& outArray = origin.domains[0].contours;
-	for (int i = 0; i < outSize;i++) {
-		for (int j = i + 1; j < outSize;j++) {
+	for (int i = 0; i < outSize; i++) {
+		for (int j = i + 1; j < outSize; j++) {
 			if (!isInContourForced(outArray[out[i]], outArray[out[j]])) {
 				int temp = out[i];
 				out[i] = out[j];
@@ -1365,7 +1409,7 @@ void combineContours(ExPolygon& origin, ExPolygon& result)
 			}
 		}
 	}
-	for (int i = 0; i < outSize;i++) {
+	for (int i = 0; i < outSize; i++) {
 		Domain tempDomain(&result);
 		tempDomain.idInPolygon = i;
 		result.domains.push_back(tempDomain);
@@ -1375,7 +1419,7 @@ void combineContours(ExPolygon& origin, ExPolygon& result)
 	}
 	for (Contour& incontour : origin.domains[1].contours) {
 		for (int i = 0; i < outSize; i++) {
-			if (isInContourForced(incontour,outArray[out[i]])) {
+			if (isInContourForced(incontour, outArray[out[i]])) {
 				Contour tempContour(i, &result, ContourPos::CP_INCONTOUR);
 				result.domains[i].contours.push_back(tempContour);
 				result.domains[i].contours[result.domains[i].contours.size() - 1].setContour(incontour);
@@ -1414,7 +1458,7 @@ bool isLegal(ExPolygon& a, double tolerance)
 		//若有内环，内环都在外环内，且内环不相互嵌套
 		if (domain.contours.size() > 1) {
 			for (int i = 1; i < domain.contours.size(); i++) {
-				if (!isInContourForced(domain.contours[i],domain.contours[0])) {
+				if (!isInContour(domain.contours[i], domain.contours[0])) {
 					return false;
 				}
 			}
@@ -1422,7 +1466,7 @@ bool isLegal(ExPolygon& a, double tolerance)
 				for (int j = 1; j < domain.contours.size(); j++) {
 					if (i == j)
 						continue;
-					if (isInContourForced(domain.contours[i], domain.contours[j])) {
+					if (isInContour(domain.contours[i], domain.contours[j])) {
 						return false;
 					}
 				}
@@ -1439,16 +1483,18 @@ bool isLegal(Contour& a, double tolerance)
 	if (a.edges.size() <= 2) {
 		return false;
 	}
-	//for (int i = 0; i < a.edges.size(); i++) {
-	//	for (int j = 0; j < a.edges.size(); j++) {
-	//		if (i == j)
-	//			continue;
-	//		double x, y;
-	//		int condition = getIntersection(edges[a.edges[i]], edges[a.edges[j]], x, y, tolerance);
-	//		if (!(condition == 0 || (condition >= 7 && condition <= 10))) {
-	//			return false;
-	//		}
-	//	}
-	//}
+	VertexArray vertexs = a.polygon->vertexs;
+	//判断所有点不重合
+	for (int i = 0; i < a.vertexs.size(); i++) {
+		for (int j = 0; j < a.vertexs.size(); j++) {
+			if (i == j)
+				continue;
+			Vertex& m = vertexs[a.vertexs[i]];
+			Vertex& n = vertexs[a.vertexs[j]];
+			if (abs(m.x - n.x) + abs(m.y - n.y) <= tolerance) {
+				return false;
+			}
+		}
+	}
 	return true;
 }
