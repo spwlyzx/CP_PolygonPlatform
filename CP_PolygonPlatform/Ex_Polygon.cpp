@@ -494,8 +494,17 @@ bool isInPolygon(const Edge* edge, const ExPolygon& polygon)
 {
 	Vertex& a = edge->polygon->vertexs[edge->a];
 	Vertex& b = edge->polygon->vertexs[edge->b];
-	Vertex newVertex((a.x + b.x / 2), (a.y + b.y) / 2, edge->polygon);
+	Vertex newVertex((a.x + b.x) / 2, (a.y + b.y) / 2, edge->polygon);
 	return isInPolygon(newVertex, polygon);
+}
+
+//判断一条边是否在某个Domain之内
+bool isInDomain(const Edge& edge, const Domain& domain)
+{
+	Vertex& a = edge.polygon->vertexs[edge.a];
+	Vertex& b = edge.polygon->vertexs[edge.b];
+	Vertex newVertex((a.x + b.x) / 2, (a.y + b.y) / 2, edge.polygon);
+	return isInDomain(newVertex, domain);
 }
 
 //判断一个点是否在某个Domain之内
@@ -507,6 +516,18 @@ bool isInDomain(const Vertex& v, const Domain& domain)
 	for (int j = 1; j < size; j++) {
 		if (isInContour(v, domain.contours[j]))
 			return false;
+	}
+	return true;
+}
+
+//判断一个环是否在某个Domain之内
+bool isOutDomain(const Contour& contour, const Domain& domain)
+{
+	for (int edgeId : contour.edges)
+	{
+		if (isInDomain(contour.polygon->edges[edgeId], domain)) {
+			return false;
+		}
 	}
 	return true;
 }
@@ -530,6 +551,9 @@ bool isInContour(const Vertex& v, const Contour& contour)
 		double ay = vertexs[edges[edgeIds[i]].a].y;
 		double bx = vertexs[edges[edgeIds[i]].b].x;
 		double by = vertexs[edges[edgeIds[i]].b].y;
+		if (ax == x && ay == y || bx == x && by == y) {
+			return true;
+		}
 		if ((ay < y && by >= y
 			|| by < y && ay >= y)
 			&& (ax <= x || bx <= x)) {
@@ -794,11 +818,20 @@ int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 					return 11;
 				}
 				else {
-					if (abs(bx - ax) + abs(by - ay) - abs(dx - ax) - abs(dy - ay) > 0) {
-						return 13;
+					double px = bx - ax;
+					double py = by - ay;
+					double qx = dx - cx;
+					double qy = dy - cy;
+					if (px*qx + py*qy > 0) {
+						if (abs(bx - ax) + abs(by - ay) - abs(dx - ax) - abs(dy - ay) > 0) {
+							return 13;
+						}
+						else {
+							return 14;
+						}
 					}
 					else {
-						return 14;
+						return 7;
 					}
 				}
 			}
@@ -807,28 +840,55 @@ int getIntersection(Edge& m, Edge& n, double& x, double& y, double tolerance)
 					return 12;
 				}
 				else {
-					if (abs(bx - ax) + abs(by - ay) - abs(cx - ax) - abs(cy - ay) > 0) {
-						return 15;
+					double px = bx - ax;
+					double py = by - ay;
+					double qx = cx - dx;
+					double qy = cy - dy;
+					if (px*qx + py*qy > 0) {
+						if (abs(bx - ax) + abs(by - ay) - abs(cx - ax) - abs(cy - ay) > 0) {
+							return 15;
+						}
+						else {
+							return 16;
+						}
 					}
 					else {
-						return 16;
+						return 8;
 					}
 				}
 			}
 			else if (abs(bx - cx) + abs(by - cy) <= tolerance) {
-				if (abs(ax - bx) + abs(ay - by) - abs(dx - bx) - abs(dy - by) > 0) {
-					return 17;
+				double px = ax - bx;
+				double py = ay - by;
+				double qx = dx - cx;
+				double qy = dy - cy;
+				if (px*qx + py*qy > 0) {
+					if (abs(ax - bx) + abs(ay - by) - abs(dx - bx) - abs(dy - by) > 0) {
+						return 17;
+					}
+					else {
+						return 18;
+					}
 				}
 				else {
-					return 18;
+					return 9;
 				}
 			}
 			else if (abs(bx - dx) + abs(by - dy) <= tolerance) {
-				if (abs(ax - bx) + abs(ay - by) - abs(cx - bx) - abs(cy - by) > 0) {
-					return 19;
+				double px = ax - bx;
+				double py = ay - by;
+				double qx = cx - dx;
+				double qy = cy - dy;
+				if (px*qx + py*qy > 0) {
+					if (abs(ax - bx) + abs(ay - by) - abs(cx - bx) - abs(cy - by) > 0) {
+						return 19;
+					}
+					else {
+						return 20;
+					}
 				}
 				else {
-					return 20;
+					return 10;
 				}
 			}
 			return 6;
@@ -1442,12 +1502,13 @@ bool isLegal(ExPolygon& a, double tolerance)
 				continue;
 			double x, y;
 			int condition = getIntersection(a.edges[i], a.edges[j], x, y, tolerance);
-			if (!(condition == 0 || (condition >= 7 && condition <= 10))) {
+			if (!(condition == 0 || (condition >= 7 && condition <= 10) || (condition >= 2 && condition <= 5))) {
 				return false;
 			}
 		}
 	}
 	//各个区域中，有且只有一个外环，且内环都在外环内
+	//各个区域中的外环必须在其他区域外
 	for (Domain& domain : a.domains) {
 		for (Contour& contour : domain.contours) {
 			//所有内环合法，为简单多边形
@@ -1469,6 +1530,17 @@ bool isLegal(ExPolygon& a, double tolerance)
 					if (isInContour(domain.contours[i], domain.contours[j])) {
 						return false;
 					}
+				}
+			}
+		}
+		//每个外环必定在其他区域之外
+		for (Domain& otherDomain : a.domains) {
+			if (otherDomain.idInPolygon == domain.idInPolygon) {
+				continue;
+			}
+			else {
+				if (!isOutDomain(domain.contours[0], otherDomain)) {
+					return false;
 				}
 			}
 		}
@@ -1497,4 +1569,46 @@ bool isLegal(Contour& a, double tolerance)
 		}
 	}
 	return true;
+}
+
+//插入外环，默认添加一个区域
+void insertOutloop(VT_PointArray& points, CP_Polygon& polygon)
+{
+	CP_Region region;
+	int	regionID = polygon.m_regionArray.size();
+	region.m_regionIDinPolygon = regionID;
+	polygon.m_regionArray.push_back(region);
+	polygon.m_regionArray[regionID].m_polygon = &polygon;
+
+	CP_Loop loop;
+	loop.m_loopIDinRegion = 0;
+	loop.m_regionIDinPolygon = regionID;
+	polygon.m_regionArray[regionID].m_loopArray.push_back(loop);
+	polygon.m_regionArray[regionID].m_loopArray[0].m_polygon = &polygon;
+	int base = polygon.m_pointArray.size();
+	for (int i = 0; i < points.size(); i++) {
+		polygon.m_pointArray.push_back(points[i]);
+		polygon.m_regionArray[regionID].m_loopArray[0].m_pointIDArray.push_back(i + base);
+	}
+}
+
+//插入内环，若给定regionID<0或对应region中不存在外环，则非法
+void insertInloop(VT_PointArray& points, int regionID, CP_Polygon& polygon)
+{
+	if (regionID < 0 || polygon.m_regionArray[regionID].m_loopArray.size() == 0) {
+		return;
+	}
+	else {
+		int loopId = polygon.m_regionArray[regionID].m_loopArray.size();
+		CP_Loop loop;
+		loop.m_loopIDinRegion = loopId;
+		loop.m_regionIDinPolygon = regionID;
+		polygon.m_regionArray[regionID].m_loopArray.push_back(loop);
+		polygon.m_regionArray[regionID].m_loopArray[loopId].m_polygon = &polygon;
+		int base = polygon.m_pointArray.size();
+		for (int i = 0; i < points.size(); i++) {
+			polygon.m_pointArray.push_back(points[i]);
+			polygon.m_regionArray[regionID].m_loopArray[loopId].m_pointIDArray.push_back(i + base);
+		}
+	}
 }

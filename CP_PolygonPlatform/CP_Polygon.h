@@ -14,6 +14,10 @@ public:
 	double m_x, m_y;
 public:
 	CP_Point(void) :m_x(0.0), m_y(0.0) {}
+	void setXY(double x,double y) {
+		m_x = x;
+		m_y = y;
+	}
 }; // 类CP_Point定义结束
 
 typedef vector<CP_Point> VT_PointArray;

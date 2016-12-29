@@ -64,17 +64,17 @@
 #define ID_VIEW_T_FACE                  32798
 #define ID_VIEW_T_EDGE                  32799
 #define ID_VIEW_FIT                     32803
-#define ID_CHECK17                      32805
 #define ID_VIEW_POINT_ID                32805
 #define ID_VIEW_T_FACE_EDGE             32806
 #define ID_VIEW_STANDARD                32807
+#define ID_SPIN1                        32808
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         32808
+#define _APS_NEXT_COMMAND_VALUE         32812
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

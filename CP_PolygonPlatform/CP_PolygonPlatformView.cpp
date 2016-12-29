@@ -478,7 +478,7 @@ void CCP_PolygonPlatformView::OnDraw(CDC* pDC)
 		gb_drawPolygonLoop(pDC, pDoc->m_result,
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
 			0, 0, 0,
-			0, 0, 0,
+			122, 122, 122,
 			5);
 		gb_drawPolygonPoint(pDC, pDoc->m_result,
 			pDoc->m_scale, pDoc->m_translation, r.right, r.bottom,
@@ -1706,6 +1706,47 @@ void CCP_PolygonPlatformView::OnCheck()
 	if (!pDoc)
 		return;
 
+	/*VT_PointArray points;
+	CP_Point temp;
+ 
+	temp.setXY(-50, 50);
+	points.push_back(temp);
+	temp.setXY(-50, -50);
+	points.push_back(temp);
+	temp.setXY(50, -50);
+	points.push_back(temp);
+	temp.setXY(50, 50);
+	points.push_back(temp);
+
+	insertOutloop(points, pDoc->m_a);
+	points.clear();
+
+	temp.setXY(-20, 20);
+	points.push_back(temp);
+	temp.setXY(20, 20);
+	points.push_back(temp);
+	temp.setXY(20, -20);
+	points.push_back(temp);
+	temp.setXY(-20, -20);
+	points.push_back(temp);
+
+	insertInloop(points, 0,pDoc->m_a);
+	points.clear();
+
+	temp.setXY(20, 0);
+	points.push_back(temp);
+	temp.setXY(0, 20);
+	points.push_back(temp);
+	temp.setXY(-20, 0);
+	points.push_back(temp);
+	temp.setXY(0, -20);
+	points.push_back(temp);
+
+	insertOutloop(points, pDoc->m_a);
+	points.clear();
+
+	Invalidate();*/
+
 	initExPolygon();
 
 	double dur;
@@ -1720,7 +1761,7 @@ void CCP_PolygonPlatformView::OnCheck()
 
 	CString temp;
 	temp.Format("%f", dur);
-	MessageBox(temp);
+	mb_statusSetText("",(LPSTR)(LPCTSTR)temp);
 
 	if (!isA && !isB) {
 		MessageBox("多边形A和B都不合法！");
@@ -1773,6 +1814,11 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 	if (!pDoc)
 		return;
 	initExPolygon();
+
+	double dur1;
+	clock_t start1, end1;
+	start1 = clock();
+
 	bool isA = isLegal(pDoc->ex_A, pDoc->m_tolerance);
 	bool isB = isLegal(pDoc->ex_B, pDoc->m_tolerance);
 	if(!isA && !isB){
@@ -1787,6 +1833,12 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 		MessageBox("多边形B不合法！");
 		return;
 	}
+
+	end1 = clock();
+	dur1 = (double)(end1 - start1);
+
+	CString temp2;
+	temp2.Format("%f", dur1);
 
 	double dur;
 	clock_t start, end;
@@ -1816,7 +1868,7 @@ void CCP_PolygonPlatformView::booleanOperation(int type)
 
 	CString temp;
 	temp.Format("%f", dur);
-	MessageBox(temp);
+	mb_statusSetText((LPSTR)(LPCTSTR)temp, (LPSTR)(LPCTSTR)temp2);
 
 	displayResult();
 }

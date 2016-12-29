@@ -148,9 +148,13 @@ extern double getAreaWithVertex(const VertexArray& vertexs, IntArray& vertexIds)
 //判断一个点是否在某个ExPolygon之内
 extern bool isInPolygon(const Vertex& vertex, const ExPolygon& polygon);
 //判断一条边是否在某个ExPolygon之内
-extern bool isInPolygon(const Edge& edge, const ExPolygon& polygon);
+extern bool isInPolygon(const Edge* edge, const ExPolygon& polygon);
 //判断一个点是否在某个Domain之内
 extern bool isInDomain(const Vertex& vertex,const Domain& domain);
+//判断一条边是否在某个Domain之内
+extern bool isInDomain(const Edge& edge, const Domain& domain);
+//判断一个环是否在某个Domain之内
+extern bool isOutDomain(const Contour& contour, const Domain& domain);
 //判断一个点是否在某个Contour构成的区域之内
 extern bool isInContour(const Vertex& vertex, const Contour& contour);
 //判断一个testContour是否在另一个contour之内，true：完全在contour内，false：至少存在一个点在contour外或在contour上
@@ -189,3 +193,7 @@ extern bool isInContourForced(const Contour& testContour, const Contour& contour
 extern bool isLegal(ExPolygon& a, double tolerance);
 //验证当前loop是否合法
 extern bool isLegal(Contour& a, double tolerance);
+//插入外环，则默认添加一个区域
+extern void insertOutloop(VT_PointArray& points,CP_Polygon& polygon);
+//插入内环，若给定regionID<0或对应region中不存在外环，则非法
+extern void insertInloop(VT_PointArray& points, int regionID, CP_Polygon& polygon);
