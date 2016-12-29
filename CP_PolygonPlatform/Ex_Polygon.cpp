@@ -1502,7 +1502,7 @@ bool isLegal(ExPolygon& a, double tolerance)
 				continue;
 			double x, y;
 			int condition = getIntersection(a.edges[i], a.edges[j], x, y, tolerance);
-			if (!(condition == 0 || (condition >= 7 && condition <= 10) || (condition >= 2 && condition <= 5))) {
+			if (!(condition == 0 || (condition >= 7 && condition <= 10))) {
 				return false;
 			}
 		}
